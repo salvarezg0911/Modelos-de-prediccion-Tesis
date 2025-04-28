@@ -1,6 +1,7 @@
 # Proyecto Cassava: Propuesta para Reducir la Inseguridad Alimentaria
 
-Este repositorio contiene el modelo y los análisis realizados en el marco del proyecto **Cassava**. Este proyecto busca desarrollar soluciones para **reducir la inseguridad alimentaria** mediante el uso de modelos predictivos aplicados a los cultivos de **yuca (cassava)**, un cultivo clave en la seguridad alimentaria en muchas regiones.
+Este repositorio contiene el modelo y los análisis realizados en el marco del proyecto **Cassava**. 
+Este proyecto busca desarrollar soluciones para **reducir la inseguridad alimentaria** mediante el uso de modelos predictivos aplicados a los cultivos de **yuca (cassava)**, un cultivo clave en la seguridad alimentaria en muchas regiones.
 
 ## Descripción
 
