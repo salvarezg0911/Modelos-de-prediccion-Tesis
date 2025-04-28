@@ -5,7 +5,7 @@ Este proyecto busca desarrollar soluciones para **reducir la inseguridad aliment
 
 ## Descripción
 
-El propósito de este trabajo es generar modelos predictivos que puedan ayudar a la predicción de factores relevantes en la producción de yuca. El enfoque principal del proyecto es ayudar a los agricultores a mejor$
+El propósito de este trabajo es generar modelos predictivos que puedan ayudar a la predicción de factores relevantes en la producción de yuca. El enfoque principal del proyecto es ayudar a los agricultores a mejorar su productividad
 
 ### Objetivos del Proyecto:
 
