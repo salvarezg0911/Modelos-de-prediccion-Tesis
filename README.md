@@ -20,3 +20,5 @@ El propósito de este trabajo es generar modelos predictivos que puedan ayudar a
 - `*.ipynb`: Jupyter Notebooks con el código para el análisis de los datos, entrenamiento de modelos y visualización de resultados.
 - `README.md`: Este archivo con la descripción del proyecto.
 
+### Revisar 
+
