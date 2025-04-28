@@ -1,0 +1,25 @@
+# Ignorar archivos de macOS
+.DS_Store
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Archivos de R
+.RData
+.Rhistory
+
+# Logs
+*.log
+
+# Archivos temporales de Vim
+*.swp
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Entornos de Conda / virtualenv
+env/
+.venv/
+
