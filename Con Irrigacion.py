@@ -75,3 +75,4 @@ print(f"R² ajustado: {r2_adj:.6f}")
 
 # Guardar modelo entrenado (formato .h5 para Keras)
 model.save("Con Irrigacion.keras")  
+

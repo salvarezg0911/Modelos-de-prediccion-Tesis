@@ -8,7 +8,7 @@ import tensorflow as tf
 modelo_irrigacion = tf.keras.models.load_model("Con Irrigacion.keras")
 modelo_sin_irrigacion = tf.keras.models.load_model("Sin Irrigacion.keras")
 
-# Mapa de departamentos (codificación simple)
+# Mapa de departamentos codificados como enteros
 departamentos_map = {
     'Cordoba': 0,
     'Guajira': 1,
@@ -28,17 +28,6 @@ server = app.server
 app.layout = html.Div([
     html.H2("Predicción de productividad de yuca 🌱"),
 
-    html.Label("Escenario"),
-    dcc.Dropdown(
-        id='escenario',
-        options=[
-            {'label': 'Con irrigación', 'value': 'irrigacion'},
-            {'label': 'Sin irrigación', 'value': 'no_irrigacion'}
-        ],
-        value='irrigacion'
-    ),
-
-    html.Br(),
     html.Label("Departamento"),
     dcc.Dropdown(
         id='depto',
@@ -46,45 +35,84 @@ app.layout = html.Div([
         value='Cordoba'
     ),
 
-    html.Br(),
+    html.Label("¿Hay irrigación?"),
+    dcc.Dropdown(
+        id='irrigacion',
+        options=[
+            {'label': 'Sí', 'value': 1},
+            {'label': 'No', 'value': 0}
+        ],
+        value=1
+    ),
+
+    html.Label("Año"),
+    dcc.Input(id='anio', type='number', value=2024),
+
+    html.Label("Día del año"),
+    dcc.Input(id='dia', type='number', value=150),
+
+    html.Label("Irradiación (MJ/m²)"),
+    dcc.Input(id='irradiacion', type='number', value=18.5, step=0.1),
+
+    html.Label("Temperatura mínima (°C)"),
+    dcc.Input(id='min_temp', type='number', value=22, step=0.1),
+
+    html.Label("Temperatura máxima (°C)"),
+    dcc.Input(id='max_temp', type='number', value=33, step=0.1),
+
     html.Label("Temperatura promedio (°C)"),
-    dcc.Input(id='temp', type='number', step=0.1, value=26),
+    dcc.Input(id='temp_prom', type='number', value=27.5, step=0.1),
 
-    html.Label("Precipitación acumulada (mm)"),
-    dcc.Input(id='precip', type='number', step=10, value=800),
+    html.Label("Presión de vapor (hPa)"),
+    dcc.Input(id='vapor', type='number', value=2.3, step=0.1),
 
-    html.Label("Radiación solar (MJ/m²/día)"),
-    dcc.Input(id='rad', type='number', step=0.1, value=18),
+    html.Label("Velocidad del viento (m/s)"),
+    dcc.Input(id='wind', type='number', value=3.5, step=0.1),
 
-    html.Br(), html.Br(),
-    html.Button("Predecir", id="btn_pred", n_clicks=0),
+    html.Label("Precipitación (mm)"),
+    dcc.Input(id='precip', type='number', value=800, step=10),
 
-    html.Br(), html.Br(),
-    html.Div(id='salida_prediccion')
+    html.Br(), html.Button("Predecir", id="btn_pred", n_clicks=0),
+
+    html.Br(), html.Div(id='salida_prediccion')
 ])
 
 # Callback
 @app.callback(
     Output('salida_prediccion', 'children'),
     Input('btn_pred', 'n_clicks'),
-    Input('escenario', 'value'),
     Input('depto', 'value'),
-    Input('temp', 'value'),
-    Input('precip', 'value'),
-    Input('rad', 'value')
+    Input('irrigacion', 'value'),
+    Input('anio', 'value'),
+    Input('dia', 'value'),
+    Input('irradiacion', 'value'),
+    Input('min_temp', 'value'),
+    Input('max_temp', 'value'),
+    Input('temp_prom', 'value'),
+    Input('vapor', 'value'),
+    Input('wind', 'value'),
+    Input('precip', 'value')
 )
-def predecir(n_clicks, escenario, depto, temp, precip, rad):
+def predecir(n_clicks, depto, irrigacion, anio, dia, irradiacion,
+             min_temp, max_temp, temp_prom, vapor, wind, precip):
+
     if n_clicks == 0:
         return ""
 
-    if None in [temp, precip, rad, depto]:
-        return html.Div("⚠️ Ingresa todos los valores antes de predecir.")
-
     try:
-        depto_code = departamentos_map[depto]
-        X_input = np.array([[temp, precip, rad, depto_code]])
+        # Hoja y Station Number fijos (invisibles)
+        hoja = 1
+        station = 100
 
-        if escenario == 'irrigacion':
+        depto_cod = departamentos_map[depto]
+
+        # Construir input en el orden original
+        X_input = np.array([[hoja, station, anio, dia, irradiacion,
+                             min_temp, max_temp, temp_prom, vapor,
+                             wind, precip, depto_cod, irrigacion]])
+
+        # Elegir modelo según irrigación
+        if irrigacion == 1:
             pred = modelo_irrigacion.predict(X_input)[0][0]
         else:
             pred = modelo_sin_irrigacion.predict(X_input)[0][0]

@@ -74,4 +74,6 @@ print(f"R²: {r2:.6f}")
 print(f"R² ajustado: {r2_adj:.6f}")
 
 # Guardar modelo entrenado (formato .h5 para Keras)
-model.save("Sin Irrigacion.keras")        
+model.save("Sin Irrigacion.keras")       
+
+print('Produccion' in train_X.columns)
