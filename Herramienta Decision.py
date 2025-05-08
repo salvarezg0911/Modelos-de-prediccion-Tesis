@@ -1,69 +1,99 @@
 import dash
-from dash import dcc, html
-import pickle
-import numpy as np
+from dash import html, dcc
 from dash.dependencies import Input, Output
+import numpy as np
+import tensorflow as tf
 
-# Inicializar la app
+# Cargar modelos
+modelo_irrigacion = tf.keras.models.load_model("Con Irrigacion.keras")
+modelo_sin_irrigacion = tf.keras.models.load_model("Sin Irrigacion.keras")
+
+# Mapa de departamentos (codificación simple)
+departamentos_map = {
+    'Cordoba': 0,
+    'Guajira': 1,
+    'Antioquia': 2,
+    'Atlantico': 3,
+    'Magdalena': 4,
+    'Cesar': 5,
+    'Bolivar': 6,
+    'Choco': 7
+}
+
+# Crear app
 app = dash.Dash(__name__)
-server = app.server  # Para desplegar en AWS
-
-# Cargar modelos previamente entrenados
-modelo_con_irrigacion = pickle.load(open('models/modelo_riego.pkl', 'rb'))
-modelo_sin_irrigacion = pickle.load(open('models/modelo_sin_riego.pkl', 'rb'))
+server = app.server
 
 # Layout
 app.layout = html.Div([
-    html.H1("Herramienta de Decisión - Productividad de Yuca"),
+    html.H2("Predicción de productividad de yuca 🌱"),
 
     html.Label("Escenario"),
     dcc.Dropdown(
         id='escenario',
         options=[
-            {'label': 'Con Irrigación', 'value': 'riego'},
-            {'label': 'Sin Irrigación', 'value': 'no_riego'}
+            {'label': 'Con irrigación', 'value': 'irrigacion'},
+            {'label': 'Sin irrigación', 'value': 'no_irrigacion'}
         ],
-        value='riego'
+        value='irrigacion'
+    ),
+
+    html.Br(),
+    html.Label("Departamento"),
+    dcc.Dropdown(
+        id='depto',
+        options=[{'label': d, 'value': d} for d in departamentos_map.keys()],
+        value='Cordoba'
     ),
 
     html.Br(),
     html.Label("Temperatura promedio (°C)"),
-    dcc.Input(id='temp', type='number', value=26, step=0.1),
+    dcc.Input(id='temp', type='number', step=0.1, value=26),
 
     html.Label("Precipitación acumulada (mm)"),
-    dcc.Input(id='precip', type='number', value=800, step=10),
+    dcc.Input(id='precip', type='number', step=10, value=800),
 
-    html.Label("Radiación solar promedio (MJ/m²/día)"),
-    dcc.Input(id='rad', type='number', value=18, step=0.1),
+    html.Label("Radiación solar (MJ/m²/día)"),
+    dcc.Input(id='rad', type='number', step=0.1, value=18),
 
-    html.Br(),
-    html.Button('Predecir Producción', id='boton_pred', n_clicks=0),
+    html.Br(), html.Br(),
+    html.Button("Predecir", id="btn_pred", n_clicks=0),
 
-    html.Div(id='resultado')
+    html.Br(), html.Br(),
+    html.Div(id='salida_prediccion')
 ])
 
 # Callback
 @app.callback(
-    Output('resultado', 'children'),
-    Input('boton_pred', 'n_clicks'),
+    Output('salida_prediccion', 'children'),
+    Input('btn_pred', 'n_clicks'),
     Input('escenario', 'value'),
+    Input('depto', 'value'),
     Input('temp', 'value'),
     Input('precip', 'value'),
     Input('rad', 'value')
 )
-def predecir(n_clicks, escenario, temp, precip, rad):
+def predecir(n_clicks, escenario, depto, temp, precip, rad):
     if n_clicks == 0:
         return ""
 
-    X = np.array([[temp, precip, rad]])
+    if None in [temp, precip, rad, depto]:
+        return html.Div("⚠️ Ingresa todos los valores antes de predecir.")
 
-    if escenario == 'riego':
-        pred = modelo_con_irrigacion.predict(X)[0]
-    else:
-        pred = modelo_sin_irrigacion.predict(X)[0]
+    try:
+        depto_code = departamentos_map[depto]
+        X_input = np.array([[temp, precip, rad, depto_code]])
 
-    return html.H3(f"Producción estimada: {pred:.2f} ton/ha")
+        if escenario == 'irrigacion':
+            pred = modelo_irrigacion.predict(X_input)[0][0]
+        else:
+            pred = modelo_sin_irrigacion.predict(X_input)[0][0]
 
-# Ejecutar
+        return html.H4(f"🌾 Predicción: {pred:.2f} toneladas por hectárea")
+
+    except Exception as e:
+        return html.Div(f"❌ Error en la predicción: {str(e)}")
+
+# Ejecutar app
 if __name__ == '__main__':
     app.run_server(debug=True)
