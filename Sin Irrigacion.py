@@ -25,6 +25,9 @@ dfs = [df1, df2, df3, df4, df5, df6, df7, df8, df9, df10, df11, df12, df13, df14
 # Unirlos en uno solo
 df = pd.concat(dfs, ignore_index=True)
 
+# Eliminar columnas que no deben estar en los predictores
+df = df.drop(columns=['Hoja', 'Produccion'])
+
 # Dividir en X e y
 X = df.drop("Toneladas por hectaria", axis=1)
 y = df["Toneladas por hectaria"]
@@ -75,5 +78,3 @@ print(f"R² ajustado: {r2_adj:.6f}")
 
 # Guardar modelo entrenado (formato .h5 para Keras)
 model.save("Sin Irrigacion.keras")       
-
-print('Produccion' in train_X.columns)

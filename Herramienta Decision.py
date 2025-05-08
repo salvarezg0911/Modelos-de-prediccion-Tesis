@@ -4,11 +4,11 @@ from dash.dependencies import Input, Output
 import numpy as np
 import tensorflow as tf
 
-# Cargar modelos
+# Cargar modelos corregidos
 modelo_irrigacion = tf.keras.models.load_model("Con Irrigacion.keras")
 modelo_sin_irrigacion = tf.keras.models.load_model("Sin Irrigacion.keras")
 
-# Mapa de departamentos codificados como enteros
+# Mapa de departamentos codificados
 departamentos_map = {
     'Cordoba': 0,
     'Guajira': 1,
@@ -24,14 +24,14 @@ departamentos_map = {
 app = dash.Dash(__name__)
 server = app.server
 
-# Layout
+# Layout de la app
 app.layout = html.Div([
     html.H2("Predicción de productividad de yuca 🌱"),
 
     html.Label("Departamento"),
     dcc.Dropdown(
         id='depto',
-        options=[{'label': d, 'value': d} for d in departamentos_map.keys()],
+        options=[{'label': d, 'value': d} for d in departamentos_map],
         value='Cordoba'
     ),
 
@@ -52,32 +52,31 @@ app.layout = html.Div([
     dcc.Input(id='dia', type='number', value=150),
 
     html.Label("Irradiación (MJ/m²)"),
-    dcc.Input(id='irradiacion', type='number', value=18.5, step=0.1),
+    dcc.Input(id='irradiacion', type='number', value=5500, step=1),
 
     html.Label("Temperatura mínima (°C)"),
-    dcc.Input(id='min_temp', type='number', value=22, step=0.1),
+    dcc.Input(id='min_temp', type='number', value=22.0, step=0.1),
 
     html.Label("Temperatura máxima (°C)"),
-    dcc.Input(id='max_temp', type='number', value=33, step=0.1),
+    dcc.Input(id='max_temp', type='number', value=32.0, step=0.1),
 
     html.Label("Temperatura promedio (°C)"),
-    dcc.Input(id='temp_prom', type='number', value=27.5, step=0.1),
+    dcc.Input(id='temp_prom', type='number', value=27.0, step=0.1),
 
     html.Label("Presión de vapor (hPa)"),
-    dcc.Input(id='vapor', type='number', value=2.3, step=0.1),
+    dcc.Input(id='vapor', type='number', value=35.0, step=0.1),
 
     html.Label("Velocidad del viento (m/s)"),
-    dcc.Input(id='wind', type='number', value=3.5, step=0.1),
+    dcc.Input(id='wind', type='number', value=0.5, step=0.01),
 
     html.Label("Precipitación (mm)"),
-    dcc.Input(id='precip', type='number', value=800, step=10),
+    dcc.Input(id='precip', type='number', value=5.2, step=0.01),
 
     html.Br(), html.Button("Predecir", id="btn_pred", n_clicks=0),
-
     html.Br(), html.Div(id='salida_prediccion')
 ])
 
-# Callback
+# Callback de predicción
 @app.callback(
     Output('salida_prediccion', 'children'),
     Input('btn_pred', 'n_clicks'),
@@ -95,33 +94,24 @@ app.layout = html.Div([
 )
 def predecir(n_clicks, depto, irrigacion, anio, dia, irradiacion,
              min_temp, max_temp, temp_prom, vapor, wind, precip):
-
     if n_clicks == 0:
         return ""
 
     try:
-        # Hoja y Station Number fijos (invisibles)
-        hoja = 1
-        station = 100
-
         depto_cod = departamentos_map[depto]
 
-        # Construir input en el orden original
-        X_input = np.array([[hoja, station, anio, dia, irradiacion,
-                             min_temp, max_temp, temp_prom, vapor,
-                             wind, precip, depto_cod, irrigacion]])
+        # Orden correcto: 12 variables esperadas por el modelo
+        X_input = np.array([[10, anio, dia, irradiacion,
+                             min_temp, max_temp, temp_prom,
+                             vapor, wind, precip, depto_cod, irrigacion]])
 
-        # Elegir modelo según irrigación
-        if irrigacion == 1:
-            pred = modelo_irrigacion.predict(X_input)[0][0]
-        else:
-            pred = modelo_sin_irrigacion.predict(X_input)[0][0]
+        # Usar el modelo correspondiente
+        modelo = modelo_irrigacion if irrigacion == 1 else modelo_sin_irrigacion
+        pred = modelo.predict(X_input)[0][0]
 
         return html.H4(f"🌾 Predicción: {pred:.2f} toneladas por hectárea")
 
     except Exception as e:
         return html.Div(f"❌ Error en la predicción: {str(e)}")
 
-# Ejecutar app
-if __name__ == '__main__':
-    app.run_server(debug=True)
+
