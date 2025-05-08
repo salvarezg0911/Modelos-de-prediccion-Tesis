@@ -26,55 +26,62 @@ server = app.server
 
 # Layout de la app
 app.layout = html.Div([
-    html.H2("Predicción de productividad de yuca 🌱"),
+    html.H1("🌽 Predicción de Productividad de Yuca", style={'textAlign': 'center'}),
 
-    html.Label("Departamento"),
-    dcc.Dropdown(
-        id='depto',
-        options=[{'label': d, 'value': d} for d in departamentos_map],
-        value='Cordoba'
-    ),
+    html.Div([
+        html.Div([
+            html.Label("Departamento"),
+            dcc.Dropdown(
+                id='depto',
+                options=[{'label': d, 'value': d} for d in departamentos_map],
+                value='Cordoba'
+            ),
 
-    html.Label("¿Hay irrigación?"),
-    dcc.Dropdown(
-        id='irrigacion',
-        options=[
-            {'label': 'Sí', 'value': 1},
-            {'label': 'No', 'value': 0}
-        ],
-        value=1
-    ),
+            html.Label("¿Hay irrigación?"),
+            dcc.Dropdown(
+                id='irrigacion',
+                options=[{'label': 'Sí', 'value': 1}, {'label': 'No', 'value': 0}],
+                value=1
+            ),
 
-    html.Label("Año"),
-    dcc.Input(id='anio', type='number', value=2024),
+            html.Label("Año"),
+            dcc.Input(id='anio', type='number', value=2024),
 
-    html.Label("Día del año"),
-    dcc.Input(id='dia', type='number', value=150),
+            html.Label("Día del año"),
+            dcc.Input(id='dia', type='number', value=150),
 
-    html.Label("Irradiación (MJ/m²)"),
-    dcc.Input(id='irradiacion', type='number', value=5500, step=1),
+            html.Label("Irradiación (MJ/m²)"),
+            dcc.Input(id='irradiacion', type='number', value=5500, step=1),
 
-    html.Label("Temperatura mínima (°C)"),
-    dcc.Input(id='min_temp', type='number', value=22.0, step=0.1),
+            html.Label("Temperatura mínima (°C)"),
+            dcc.Input(id='min_temp', type='number', value=22.0, step=0.1),
 
-    html.Label("Temperatura máxima (°C)"),
-    dcc.Input(id='max_temp', type='number', value=32.0, step=0.1),
+            html.Label("Temperatura máxima (°C)"),
+            dcc.Input(id='max_temp', type='number', value=32.0, step=0.1),
 
-    html.Label("Temperatura promedio (°C)"),
-    dcc.Input(id='temp_prom', type='number', value=27.0, step=0.1),
+            html.Label("Temperatura promedio (°C)"),
+            dcc.Input(id='temp_prom', type='number', value=27.0, step=0.1),
 
-    html.Label("Presión de vapor (hPa)"),
-    dcc.Input(id='vapor', type='number', value=35.0, step=0.1),
+            html.Label("Presión de vapor (hPa)"),
+            dcc.Input(id='vapor', type='number', value=35.0, step=0.1),
 
-    html.Label("Velocidad del viento (m/s)"),
-    dcc.Input(id='wind', type='number', value=0.5, step=0.01),
+            html.Label("Velocidad del viento (m/s)"),
+            dcc.Input(id='wind', type='number', value=0.5, step=0.01),
 
-    html.Label("Precipitación (mm)"),
-    dcc.Input(id='precip', type='number', value=5.2, step=0.01),
+            html.Label("Precipitación (mm)"),
+            dcc.Input(id='precip', type='number', value=5.2, step=0.01),
 
-    html.Br(), html.Button("Predecir", id="btn_pred", n_clicks=0),
-    html.Br(), html.Div(id='salida_prediccion')
+            html.Br(),
+            html.Button("Predecir", id="btn_pred", n_clicks=0),
+        ], style={'width': '40%', 'display': 'inline-block', 'verticalAlign': 'top', 'padding': '20px'}),
+
+        html.Div([
+            html.Div(id='salida_prediccion'),
+            dcc.Graph(id='mapa_departamento')
+        ], style={'width': '58%', 'display': 'inline-block', 'padding': '20px'}),
+    ])
 ])
+
 
 # Callback de predicción
 @app.callback(
@@ -113,5 +120,9 @@ def predecir(n_clicks, depto, irrigacion, anio, dia, irradiacion,
 
     except Exception as e:
         return html.Div(f"❌ Error en la predicción: {str(e)}")
+
+# Ejecutar app
+if __name__ == '__main__':
+    app.run_server(debug=True)
 
 
