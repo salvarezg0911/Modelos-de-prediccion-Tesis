@@ -3,6 +3,10 @@ from dash import html, dcc
 from dash.dependencies import Input, Output
 import numpy as np
 import tensorflow as tf
+import json
+import pandas as pd
+import plotly.express as px
+from dash.dependencies import Input, Output, State
 
 # Cargar modelos corregidos
 modelo_irrigacion = tf.keras.models.load_model("Con Irrigacion.keras")
@@ -23,6 +27,31 @@ departamentos_map = {
 # Crear app
 app = dash.Dash(__name__)
 server = app.server
+
+with open("co.json", encoding="utf-8") as f:
+    geojson_colombia = json.load(f)
+
+def generar_mapa(departamento_seleccionado):
+    df = pd.DataFrame({
+        "Departamento": [feature["properties"]["NOMBRE_DPT"] for feature in geojson_colombia["features"]],
+        "Valor": [1 if feature["properties"]["NOMBRE_DPT"] == departamento_seleccionado else 0 for feature in geojson_colombia["features"]]
+    })
+
+    fig = px.choropleth_mapbox(
+        df,
+        geojson=geojson_colombia,
+        locations="Departamento",
+        featureidkey="properties.NOMBRE_DPT",
+        color="Valor",
+        color_continuous_scale=["lightgray", "green"],
+        mapbox_style="carto-positron",
+        zoom=4.5,
+        center={"lat": 4.5709, "lon": -74.2973},
+        opacity=0.6
+    )
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    return fig
+
 
 # Layout de la app
 app.layout = html.Div([
@@ -85,41 +114,44 @@ app.layout = html.Div([
 
 # Callback de predicción
 @app.callback(
-    Output('salida_prediccion', 'children'),
-    Input('btn_pred', 'n_clicks'),
-    Input('depto', 'value'),
-    Input('irrigacion', 'value'),
-    Input('anio', 'value'),
-    Input('dia', 'value'),
-    Input('irradiacion', 'value'),
-    Input('min_temp', 'value'),
-    Input('max_temp', 'value'),
-    Input('temp_prom', 'value'),
-    Input('vapor', 'value'),
-    Input('wind', 'value'),
-    Input('precip', 'value')
+    [Output('salida_prediccion', 'children'),
+     Output('mapa_departamento', 'figure')],
+    [Input('btn_pred', 'n_clicks')],
+    [State('depto', 'value'),
+     State('irrigacion', 'value'),
+     State('anio', 'value'),
+     State('dia', 'value'),
+     State('irradiacion', 'value'),
+     State('min_temp', 'value'),
+     State('max_temp', 'value'),
+     State('temp_prom', 'value'),
+     State('vapor', 'value'),
+     State('wind', 'value'),
+     State('precip', 'value')]
 )
 def predecir(n_clicks, depto, irrigacion, anio, dia, irradiacion,
              min_temp, max_temp, temp_prom, vapor, wind, precip):
     if n_clicks == 0:
-        return ""
+        return "", generar_mapa(depto)
 
     try:
         depto_cod = departamentos_map[depto]
 
-        # Orden correcto: 12 variables esperadas por el modelo
         X_input = np.array([[10, anio, dia, irradiacion,
                              min_temp, max_temp, temp_prom,
                              vapor, wind, precip, depto_cod, irrigacion]])
 
-        # Usar el modelo correspondiente
         modelo = modelo_irrigacion if irrigacion == 1 else modelo_sin_irrigacion
         pred = modelo.predict(X_input)[0][0]
 
-        return html.H4(f"🌾 Predicción: {pred:.2f} toneladas por hectárea")
+        resultado = html.H4(f"🌾 Predicción: {pred:.2f} toneladas por hectárea")
+        mapa = generar_mapa(depto)
+
+        return resultado, mapa
 
     except Exception as e:
-        return html.Div(f"❌ Error en la predicción: {str(e)}")
+        return html.Div(f"❌ Error en la predicción: {str(e)}"), generar_mapa(depto)
+
 
 # Ejecutar app
 if __name__ == '__main__':
