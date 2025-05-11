@@ -14,14 +14,14 @@ modelo_sin_irrigacion = tf.keras.models.load_model("Sin Irrigacion.keras")
 
 # Mapa de departamentos codificados
 departamentos_map = {
-    'Cordoba': 0,
-    'Guajira': 1,
-    'Antioquia': 2,
-    'Atlantico': 3,
-    'Magdalena': 4,
-    'Cesar': 5,
-    'Bolivar': 6,
-    'Choco': 7
+    'Córdoba': 'CORDOBA',
+    'Guajira': 'GUAJIRA',
+    'Antioquia': 'ANTIOQUIA',
+    'Atlántico': 'ATLANTICO',
+    'Magdalena': 'MAGDALENA',
+    'Cesar': 'CESAR',
+    'Bolívar': 'BOLIVAR',
+    'Chocó': 'CHOCO'
 }
 
 # Crear app
@@ -30,18 +30,20 @@ server = app.server
 
 with open("co.json", encoding="utf-8") as f:
     geojson_colombia = json.load(f)
+    print("Ejemplo de propiedades de un departamento:")
+    print(geojson_colombia["features"][0]["properties"])
 
 def generar_mapa(departamento_seleccionado):
     df = pd.DataFrame({
-        "Departamento": [feature["properties"]["NOMBRE_DPT"] for feature in geojson_colombia["features"]],
-        "Valor": [1 if feature["properties"]["NOMBRE_DPT"] == departamento_seleccionado else 0 for feature in geojson_colombia["features"]]
+        "Departamento": [feature["properties"]["name"] for feature in geojson_colombia["features"]],
+        "Valor": [1 if feature["properties"]["name"] == departamento_seleccionado else 0 for feature in geojson_colombia["features"]]
     })
 
     fig = px.choropleth_mapbox(
         df,
         geojson=geojson_colombia,
         locations="Departamento",
-        featureidkey="properties.NOMBRE_DPT",
+        featureidkey="properties.name",
         color="Valor",
         color_continuous_scale=["lightgray", "green"],
         mapbox_style="carto-positron",
@@ -62,8 +64,8 @@ app.layout = html.Div([
             html.Label("Departamento"),
             dcc.Dropdown(
                 id='depto',
-                options=[{'label': d, 'value': d} for d in departamentos_map],
-                value='Cordoba'
+                options=[{'label': k, 'value': v} for k, v in departamentos_map.items()],
+                value='CORDOBA'
             ),
 
             html.Label("¿Hay irrigación?"),
@@ -135,7 +137,7 @@ def predecir(n_clicks, depto, irrigacion, anio, dia, irradiacion,
         return "", generar_mapa(depto)
 
     try:
-        depto_cod = departamentos_map[depto]
+        depto_cod = list(departamentos_map.values()).index(depto)
 
         X_input = np.array([[10, anio, dia, irradiacion,
                              min_temp, max_temp, temp_prom,
@@ -151,7 +153,6 @@ def predecir(n_clicks, depto, irrigacion, anio, dia, irradiacion,
 
     except Exception as e:
         return html.Div(f"❌ Error en la predicción: {str(e)}"), generar_mapa(depto)
-
 
 # Ejecutar app
 if __name__ == '__main__':
