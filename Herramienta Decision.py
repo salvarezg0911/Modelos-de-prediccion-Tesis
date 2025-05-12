@@ -34,9 +34,11 @@ with open("co.json", encoding="utf-8") as f:
     print(geojson_colombia["features"][0]["properties"])
 
 def generar_mapa(departamento_seleccionado):
+    departamentos = [f["properties"]["name"] for f in geojson_colombia["features"]]
+
     df = pd.DataFrame({
-        "Departamento": [feature["properties"]["name"] for feature in geojson_colombia["features"]],
-        "Valor": [1 if feature["properties"]["name"] == departamento_seleccionado else 0 for feature in geojson_colombia["features"]]
+        "Departamento": departamentos,
+        "Seleccionado": [1 if d == departamento_seleccionado else 0 for d in departamentos]
     })
 
     fig = px.choropleth_mapbox(
@@ -44,14 +46,22 @@ def generar_mapa(departamento_seleccionado):
         geojson=geojson_colombia,
         locations="Departamento",
         featureidkey="properties.name",
-        color="Valor",
-        color_continuous_scale=["lightgray", "green"],
+        color="Seleccionado",
+        color_continuous_scale=[[0, "lightgray"], [1, "green"]],
+        range_color=[0,1],
         mapbox_style="carto-positron",
-        zoom=4.5,
+        zoom=4,  
         center={"lat": 4.5709, "lon": -74.2973},
-        opacity=0.6
+        opacity=0.6,
+        hover_data={"Seleccionado": False, "Departamento": False}
     )
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
+    fig.update_layout(
+        coloraxis_showscale=False,  # ❌ Oculta la barra de color
+        showlegend=False,           # ❌ Oculta la leyenda
+        margin={"r":0,"t":0,"l":0,"b":0}
+    )
+
     return fig
 
 
@@ -101,9 +111,6 @@ app.layout = html.Div([
 
             html.Label("Precipitación (mm)"),
             dcc.Input(id='precip', type='number', value=5.2, step=0.01),
-
-            html.Br(),
-            html.Button("Predecir", id="btn_pred", n_clicks=0),
         ], style={'width': '40%', 'display': 'inline-block', 'verticalAlign': 'top', 'padding': '20px'}),
 
         html.Div([
@@ -118,24 +125,20 @@ app.layout = html.Div([
 @app.callback(
     [Output('salida_prediccion', 'children'),
      Output('mapa_departamento', 'figure')],
-    [Input('btn_pred', 'n_clicks')],
-    [State('depto', 'value'),
-     State('irrigacion', 'value'),
-     State('anio', 'value'),
-     State('dia', 'value'),
-     State('irradiacion', 'value'),
-     State('min_temp', 'value'),
-     State('max_temp', 'value'),
-     State('temp_prom', 'value'),
-     State('vapor', 'value'),
-     State('wind', 'value'),
-     State('precip', 'value')]
+    [Input('depto', 'value'),
+     Input('irrigacion', 'value'),
+     Input('anio', 'value'),
+     Input('dia', 'value'),
+     Input('irradiacion', 'value'),
+     Input('min_temp', 'value'),
+     Input('max_temp', 'value'),
+     Input('temp_prom', 'value'),
+     Input('vapor', 'value'),
+     Input('wind', 'value'),
+     Input('precip', 'value')]
 )
-def predecir(n_clicks, depto, irrigacion, anio, dia, irradiacion,
+def predecir(depto, irrigacion, anio, dia, irradiacion,
              min_temp, max_temp, temp_prom, vapor, wind, precip):
-    if n_clicks == 0:
-        return "", generar_mapa(depto)
-
     try:
         depto_cod = list(departamentos_map.values()).index(depto)
 
@@ -152,7 +155,8 @@ def predecir(n_clicks, depto, irrigacion, anio, dia, irradiacion,
         return resultado, mapa
 
     except Exception as e:
-        return html.Div(f"❌ Error en la predicción: {str(e)}"), generar_mapa(depto)
+        return html.Div(f"❌ Error: {str(e)}"), generar_mapa(depto)
+
 
 # Ejecutar app
 if __name__ == '__main__':
